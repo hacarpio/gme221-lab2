@@ -33,6 +33,35 @@ print(landuse.crs)
 print(parcels.geometry.type.unique())
 print(landuse.geometry.type.unique())
 
+# Reproject to EPSG:3395 for area calculations
+parcels = parcels.to_crs(epsg=3395)
+landuse = landuse.to_crs(epsg=3395)
+print(parcels.head())
+
+print(parcels.geometry)
+
+parcels["total_area"] = parcels.geometry.area
+print(parcels["total_area"])
+
+overlay = gpd.overlay(parcels, landuse, how="intersection")
+overlay["landuse_area"] = overlay.geometry.area
+print(overlay.head())
+
+overlay["percentage"] = (
+    overlay["landuse_area"] / overlay["total_area"]
+) * 100
+
+overlay["percentage"] = overlay["percentage"].round(2)
+
+print(overlay.head())
+
+dominant_res = overlay[
+    ((overlay["name"] == "Residential Zone - Low Density") |
+     (overlay["name"] == "Residential Zone - Medium Density")) &
+     (overlay["percentage"] >= 60)
+].copy()
+
+print(dominant_res.head())
 
 
 
