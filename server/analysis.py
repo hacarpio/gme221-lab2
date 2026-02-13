@@ -64,4 +64,7 @@ dominant_res = overlay[
 print(dominant_res.head())
 
 
+dominant_res = dominant_res.to_crs(epsg=4326)
 
+dominant_res.to_file("dominant_residential.geojson", driver="GeoJSON")
+print("GeoJSON saved successfully.")
