@@ -68,3 +68,18 @@ dominant_res = dominant_res.to_crs(epsg=4326)
 
 dominant_res.to_file("dominant_residential.geojson", driver="GeoJSON")
 print("GeoJSON saved successfully.")
+
+
+dominant_res = overlay[
+    ((overlay["name"] == "Residential Zone - Low Density") |
+     (overlay["name"] == "Residential Zone - Medium Density")) &
+     (overlay["percentage"] >= 50)
+].copy()
+
+print(dominant_res.head())
+
+
+dominant_res = dominant_res.to_crs(epsg=4326)
+
+dominant_res.to_file("dominant_residential.geojson", driver="GeoJSON")
+print("GeoJSON saved successfully.")
