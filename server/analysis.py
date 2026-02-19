@@ -84,18 +84,18 @@ dominant_res = dominant_res.to_crs(epsg=4326)
 dominant_res.to_file("dominant_residential.geojson", driver="GeoJSON")
 print("GeoJSON saved successfully.")
 
-# Group by Parcel ID and find the maximum percentage for each
-max_landuse = overlay.groupby('parcel_pin')['percentage'].max()
+# 1. Calculate the maximum percentage found in each parcel
+# This creates a Series where the index is 'parcel_id' and the value is the highest % found
+max_pct_per_parcel = overlay.groupby('parcel_id')['percentage'].max()
 
-# Identify the IDs where the max percentage is 60% or less
-mixed_use_ids = max_landuse[max_landuse <= 60].index
+# 2. Identify IDs where the 'peak' land use is less than 60%
+mixed_ids = max_pct_per_parcel[max_pct_per_parcel < 60].index
 
-#Filter your original GeoDataFrame to keep only those parcels
-mixed_use_parcels = overlay[overlay['parcel_pin'].isin(mixed_use_ids)]
+# 3. Filter the original overlay to keep only these parcels
+mixed_use_df = overlay[overlay['parcel_id'].isin(mixed_ids)].copy()
 
-print(f"Found {len(mixed_use_parcels.parcel_pin.unique())} mixed-use parcels.")
+# 4. Export the result
+mixed_use_df = mixed_use_df.to_crs(epsg=4326)
+mixed_use_df.to_file("mixed_use_parcels.geojson", driver="GeoJSON")
 
-dominant_res = dominant_res.to_crs(epsg=4326)
-
-dominant_res.to_file("dominant_residential.geojson", driver="GeoJSON")
-print("GeoJSON saved successfully.")
+print(f"Success! Identified {mixed_use_df['parcel_id'].nunique()} mixed-use parcels.")
