@@ -24,3 +24,63 @@ landuse = gpd.read_postgis(sql_landuse, engine, geom_col="geom")
 
 print(parcels.head())
 print(landuse.head())
+
+# print(parcels.head())
+# print(landuse.head())
+
+print(parcels.crs)
+print(landuse.crs)
+print(parcels.geometry.type.unique())
+print(landuse.geometry.type.unique())
+
+# Reproject to EPSG:3395 for area calculations
+parcels = parcels.to_crs(epsg=3395)
+landuse = landuse.to_crs(epsg=3395)
+print(parcels.head())
+
+print(parcels.geometry)
+
+parcels["total_area"] = parcels.geometry.area
+print(parcels["total_area"])
+
+print(parcels.head())
+
+overlay = gpd.overlay(parcels, landuse, how="intersection")
+overlay["landuse_area"] = overlay.geometry.area
+print(overlay.head())
+
+overlay["percentage"] = (
+    overlay["landuse_area"] / overlay["total_area"]
+) * 100
+
+overlay["percentage"] = overlay["percentage"].round(2)
+
+print(overlay.head())
+
+# get dominant land use for per parcel
+idx = overlay.groupby("parcel_pin")["percentage"].idxmax()
+dominant = overlay.loc[idx, ["parcel_pin", "name", "percentage"]]
+# dissolve (aggregate) by parcel_pin to get percentage and dominant land use
+geom = overlay[["parcel_pin","geometry"]].dissolve(
+by="parcel_pin").reset_index()
+# merge dominant land use back to dissolved geometries
+overlay = geom.merge(
+dominant,
+on="parcel_pin",
+how="left"
+)
+print(overlay.head())
+
+dominant_res = overlay[
+    ((overlay["name"] == "Residential Zone - Low Density") |
+     (overlay["name"] == "Residential Zone - Medium Density")) &
+     (overlay["percentage"] >= 60)
+].copy()
+
+print(dominant_res.head())
+
+dominant_res = dominant_res.to_crs(epsg=4326)
+
+dominant_res.to_file("challenge_result.geojson ", driver="GeoJSON")
+print("GeoJSON saved successfully.")
+
